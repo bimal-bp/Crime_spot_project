@@ -12,9 +12,29 @@ st.title('Crime Data Analysis')
 # Load the data
 data = load_data()
 
-# Capitalize the state and district names
-data['state/ut'] = data['state/ut'].str.title()
-data['district'] = data['district'].str.title()
+# Clean up the crime incidents column by removing commas and quotes, then convert to integers
+data['crime_incidents'] = data['crime_incidents'].replace(r'"', '', regex=True)  # Remove quotation marks
+data['crime_incidents'] = data['crime_incidents'].replace(r',', '', regex=True)  # Remove commas
+data['crime_incidents'] = data['crime_incidents'].astype(int)  # Convert to integer
+
+# Example function to give safety insights based on the crime data
+def safety_insight(state, district):
+    # Filter the data for the selected location (state, district)
+    location_data = data[(data['state/ut'] == state) & (data['district'] == district)]
+    
+    if not location_data.empty:
+        latest_data = location_data.iloc[-1]  # Get the most recent data
+        crime_incidents = latest_data['crime_incidents']
+        
+        # Provide a safety insight based on the number of incidents
+        if crime_incidents > 100:
+            return "This area has had significant criminal incidents in recent years. Stay vigilant and follow safety precautions."
+        elif crime_incidents > 50:
+            return "This area has moderate criminal activity. Be aware of your surroundings and take necessary precautions."
+        else:
+            return "The crime rate in this area appears to be relatively low. However, it's always best to stay cautious."
+    else:
+        return "No crime data available for the selected location."
 
 # Page selection using a button
 if 'page' not in st.session_state:
@@ -36,6 +56,10 @@ if st.session_state.page == 'Home':
         st.session_state.state = state
         st.session_state.district = district
         st.session_state.page = 'Crime Data'  # Switch to the second page
+
+        # Display safety insights
+        safety_message = safety_insight(state, district)
+        st.write(safety_message)
 
 # Crime Data page: Display the filtered data and summary statistics
 if st.session_state.page == 'Crime Data':
