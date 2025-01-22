@@ -1,62 +1,126 @@
 import streamlit as st
 import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import folium
+from streamlit_folium import folium_static
+from statsmodels.tsa.arima.model import ARIMA
 
-# Load the .pkl file
+# Load the dataset
 @st.cache_data
 def load_data():
     return pd.read_pickle('crime_data.pkl')
 
-# Set up the Streamlit app
-st.title('Crime Data Analysis')
-
-# Load the data
 data = load_data()
 
-# Capitalize the state and district names
+# Capitalize state and district names for consistency
 data['state/ut'] = data['state/ut'].str.title()
 data['district'] = data['district'].str.title()
 
-# Page selection using a button
+# Page selection state management
 if 'page' not in st.session_state:
     st.session_state.page = 'Home'
 
-# Home page: Display the state and district selection
+# Home page - State and District selection
 if st.session_state.page == 'Home':
+    st.title('Crime Data Analysis & Safety Insights')
+
     state = st.selectbox('Select State/UT:', data['state/ut'].unique())
 
-    # Filter districts based on the selected state
     districts = data[data['state/ut'] == state]['district'].unique()
-
-    # Show the district selection after the state is selected
     district = st.selectbox('Select District:', districts)
 
-    # Button to proceed to the next page and show the results
     if st.button('Show Crime Data'):
-        # Save the selected state and district in session state
         st.session_state.state = state
         st.session_state.district = district
-        st.session_state.page = 'Crime Data'  # Switch to the second page
+        st.session_state.page = 'Crime Data'
 
-# Crime Data page: Display the filtered data and summary statistics
+# Crime Data Page - Display insights and analysis
 if st.session_state.page == 'Crime Data':
-    # Retrieve the selected state and district from session state
     state = st.session_state.state
     district = st.session_state.district
 
-    # Filter the data based on the selected state, district, and the last 4 years (2021-2024)
-    filtered_data = data[(data['state/ut'] == state) & 
-                         (data['district'] == district) & 
-                         (data['year'].isin([2021, 2022, 2023, 2024]))]
+    filtered_data = data[
+        (data['state/ut'] == state) &
+        (data['district'] == district) &
+        (data['year'].isin([2021, 2022, 2023, 2024]))
+    ]
 
-    # Display the selected data on the second page
-    st.subheader(f'Crime Data for {district} ({state})')
+    st.subheader(f'Crime Data for {district}, {state}')
     st.dataframe(filtered_data)
 
-    # Show summary statistics for the selected data
-    if st.checkbox('Show summary statistics'):
-        st.subheader('Summary Statistics')
-        st.write(filtered_data.describe())
+    # Crime Severity Score Calculation
+    crime_weights = {
+        'murder': 5,
+        'rape': 4,
+        'kidnapping & abduction': 4,
+        'robbery': 3,
+        'burglary': 2,
+        'dowry deaths': 3
+    }
 
-    # Button to go back to the first page
+    def calculate_crime_severity(df):
+        weighted_sum = sum(df[col].sum() * weight for col, weight in crime_weights.items())
+        max_possible = sum(df[col].max() * weight for col, weight in crime_weights.items())
+        crime_index = (weighted_sum / max_possible) * 100  # Normalize to a 0-100 scale
+        return round(crime_index, 2)
+
+    crime_severity_index = calculate_crime_severity(filtered_data)
+    st.metric(label="Crime Severity Index (Higher is riskier)", value=crime_severity_index)
+
+    if crime_severity_index < 40:
+        st.success("🟢 This area is relatively safe.")
+    elif crime_severity_index < 70:
+        st.warning("🟠 Moderate risk; stay cautious.")
+    else:
+        st.error("🔴 High risk! Precaution is advised.")
+
+    # Crime Trend Visualization
+    st.subheader('Crime Trends Over the Years')
+    crime_types = ['murder', 'rape', 'kidnapping & abduction', 'robbery', 'burglary', 'dowry deaths']
+    for crime in crime_types:
+        trend_data = filtered_data.groupby('year')[crime].sum()
+        st.line_chart(trend_data)
+
+    # Crime Frequency Analysis
+    st.subheader('Crime Distribution')
+    crime_frequencies = filtered_data[crime_types].sum().sort_values(ascending=False)
+    st.bar_chart(crime_frequencies)
+
+    # Top Crime-Prone Areas
+    st.subheader('Top Crime-Prone Areas')
+    hotspots = filtered_data.groupby('district')['murder', 'robbery', 'burglary'].sum().sort_values(by=['murder'], ascending=False).head(5)
+    st.table(hotspots)
+
+    # Crime Heatmap Visualization
+    st.subheader('Crime Correlation Heatmap')
+    plt.figure(figsize=(8,6))
+    sns.heatmap(filtered_data[crime_types].corr(), annot=True, cmap='coolwarm')
+    st.pyplot(plt)
+
+    # Safety Recommendations
+    st.subheader('Safety Recommendations')
+    if crime_frequencies['murder'] > 50:
+        st.warning("🔴 Avoid high-crime areas at night and stay vigilant.")
+    if crime_frequencies['rape'] > 30:
+        st.warning("⚠️ Travel in groups and use verified transport services.")
+    if crime_frequencies['burglary'] > 100:
+        st.warning("🏠 Install security systems and inform neighbors when away.")
+
+    # Crime Forecasting (Predicting Future Trends)
+    st.subheader('Predicted Crime Rates for Next 3 Years (Murder Cases)')
+    crime_forecast_model = ARIMA(filtered_data['murder'], order=(1, 1, 1))
+    model_fit = crime_forecast_model.fit()
+    future_prediction = model_fit.forecast(steps=3)
+    st.write(future_prediction)
+
+    # Interactive Crime Heatmap
+    st.subheader('Crime Hotspot Map')
+    m = folium.Map(location=[filtered_data['latitude'].mean(), filtered_data['longitude'].mean()], zoom_start=10)
+    for idx, row in filtered_data.iterrows():
+        folium.Marker([row['latitude'], row['longitude']], popup=f"Crime: {row['murder']} Murders").add_to(m)
+    folium_static(m)
+
+    # Back Button
     if st.button('Go Back'):
         st.session_state.page = 'Home'
