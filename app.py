@@ -16,8 +16,8 @@ data = load_data()
 data['state/ut'] = data['state/ut'].str.title()
 data['district'] = data['district'].str.title()
 
-# Convert the year to integer to remove the quotes
-data['year'] = data['year'].astype(int)
+# Remove quotation marks from the year column and convert it to integer
+data['year'] = data['year'].replace(r'"', '', regex=True).astype(int)
 
 # Page selection using a button
 if 'page' not in st.session_state:
