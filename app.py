@@ -12,18 +12,9 @@ st.title('Crime Data Analysis')
 # Load the data
 data = load_data()
 
-# Check the type and inspect the 'year' column for issues
-st.write(f"Year Column Type: {data['year'].dtype}")
-st.write(data['year'].head())  # Preview the first few rows of the 'year' column
-
 # Capitalize the state and district names
 data['state/ut'] = data['state/ut'].str.title()
 data['district'] = data['district'].str.title()
-
-# Clean the 'year' column: remove quotes and commas, then convert to integer
-data['year'] = data['year'].replace(r'"', '', regex=True)  # Remove quotation marks
-data['year'] = data['year'].replace(r',', '', regex=True)  # Remove commas
-data['year'] = data['year'].astype(int)  # Convert to integer
 
 # Page selection using a button
 if 'page' not in st.session_state:
