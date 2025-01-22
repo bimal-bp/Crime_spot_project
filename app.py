@@ -21,8 +21,10 @@ districts = data[data['state/ut'] == state]['district'].unique()
 # Show the district selection after the state is selected
 district = st.selectbox('Select District:', districts)
 
-# Filter the data based on the selected state and district
-filtered_data = data[(data['state/ut'] == state) & (data['district'] == district)]
+# Filter the data based on the selected state, district, and the last 4 years (2021-2024)
+filtered_data = data[(data['state/ut'] == state) & 
+                     (data['district'] == district) & 
+                     (data['year'].isin([2021, 2022, 2023, 2024]))]
 
 # Display the selected data
 st.subheader(f'Crime Data for {district} ({state})')
