@@ -12,6 +12,10 @@ st.title('Crime Data Analysis')
 # Load the data
 data = load_data()
 
+# Check the type and inspect the 'year' column for issues
+st.write(f"Year Column Type: {data['year'].dtype}")
+st.write(data['year'].head())  # Preview the first few rows of the 'year' column
+
 # Capitalize the state and district names
 data['state/ut'] = data['state/ut'].str.title()
 data['district'] = data['district'].str.title()
