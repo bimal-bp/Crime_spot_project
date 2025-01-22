@@ -12,6 +12,13 @@ st.title('Crime Data Analysis')
 # Load the data
 data = load_data()
 
+# Capitalize the state and district names
+data['state/ut'] = data['state/ut'].str.title()
+data['district'] = data['district'].str.title()
+
+# Convert the year to integer to remove the quotes
+data['year'] = data['year'].astype(int)
+
 # Page selection using a button
 if 'page' not in st.session_state:
     st.session_state.page = 'Home'
