@@ -4,7 +4,7 @@ import pandas as pd
 # Load the .pkl file
 @st.cache_data
 def load_data():
-    return pd.read_pickle('/content/crime_data.pkl')
+    return pd.read_pickle('crime_data.pkl')
 
 # Set up the Streamlit app
 st.title('Crime Data Analysis')
