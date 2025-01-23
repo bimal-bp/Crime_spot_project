@@ -80,16 +80,20 @@ if st.session_state.page == 'Crime Data':
     crime_frequencies = filtered_data[crime_types].sum().sort_values(ascending=False)
     st.bar_chart(crime_frequencies)
 
-    # Crime Trend Visualization (2021-2024)
+    # Crime Trend Visualization (2021-2024) - All trends in one graph
     st.subheader('Crime Trends Over the Years')
     trend_data = data[(data['state/ut'] == state) & (data['district'] == district) & (data['year'].isin([2021, 2022, 2023, 2024]))]
+    
+    # Create a combined plot for all crime types across years
+    plt.figure(figsize=(10, 6))
     for crime in crime_types:
-        st.line_chart(trend_data.groupby('year')[crime].sum())
-
-    # Crime Heatmap Visualization
-    st.subheader('Crime Correlation Heatmap')
-    plt.figure(figsize=(8,6))
-    sns.heatmap(filtered_data[crime_types].corr(), annot=True, cmap='coolwarm')
+        crime_sum_by_year = trend_data.groupby('year')[crime].sum()
+        plt.plot(crime_sum_by_year.index, crime_sum_by_year.values, label=crime)
+    
+    plt.title(f'Crime Trends for {district}, {state} (2021-2024)')
+    plt.xlabel('Year')
+    plt.ylabel('Crime Count')
+    plt.legend(title="Crime Types")
     st.pyplot(plt)
 
     # Safety Recommendations
