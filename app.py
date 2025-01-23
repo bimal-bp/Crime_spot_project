@@ -2,9 +2,6 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-import folium
-from streamlit_folium import folium_static
-from statsmodels.tsa.arima.model import ARIMA
 
 # Load the dataset
 @st.cache_data
@@ -24,12 +21,9 @@ if 'page' not in st.session_state:
 # Home page - State and District selection
 if st.session_state.page == 'Home':
     st.title('Crime Data Analysis & Safety Insights')
-
     state = st.selectbox('Select State/UT:', data['state/ut'].unique())
-
     districts = data[data['state/ut'] == state]['district'].unique()
     district = st.selectbox('Select District:', districts)
-
     if st.button('Show Crime Data'):
         st.session_state.state = state
         st.session_state.district = district
@@ -42,12 +36,14 @@ if st.session_state.page == 'Crime Data':
 
     filtered_data = data[
         (data['state/ut'] == state) &
-        (data['district'] == district) &
-        (data['year'].isin([2023, 2024]))
+        (data['district'] == district)
     ]
-
+    
+    # Filter for severity index calculation (2023 and 2024 only)
+    recent_data = filtered_data[filtered_data['year'].isin([2023, 2024])]
+    
     st.subheader(f'Crime Data for {district}, {state}')
-    st.dataframe(filtered_data)
+    st.dataframe(recent_data)
 
     # Crime Severity Score Calculation
     crime_weights = {
@@ -65,7 +61,7 @@ if st.session_state.page == 'Crime Data':
         crime_index = (weighted_sum / max_possible) * 100  # Normalize to a 0-100 scale
         return round(crime_index, 2)
 
-    crime_severity_index = calculate_crime_severity(filtered_data)
+    crime_severity_index = calculate_crime_severity(recent_data)
     st.metric(label="Crime Severity Index (Higher is riskier)", value=crime_severity_index)
 
     if crime_severity_index < 40:
@@ -75,27 +71,17 @@ if st.session_state.page == 'Crime Data':
     else:
         st.error("🔴 High risk! Precaution is advised.")
 
-    # Crime Trend Visualization (Single Line Graph for 2021-2024)
+    # Crime Trend Visualization (2021-2024)
     st.subheader('Crime Trends Over the Years')
-    trend_data = data[
-        (data['state/ut'] == state) &
-        (data['district'] == district) &
-        (data['year'].isin([2021, 2022, 2023, 2024]))
-    ].groupby('year')['murder'].sum()
-    st.line_chart(trend_data)
+    trend_data = filtered_data[filtered_data['year'].isin([2021, 2022, 2023, 2024])]
+    crime_types = ['murder', 'rape', 'kidnapping & abduction', 'robbery', 'burglary', 'dowry deaths']
+    trend_summary = trend_data.groupby('year')[crime_types].sum()
+    st.line_chart(trend_summary)
 
     # Crime Frequency Analysis
     st.subheader('Crime Distribution')
-    crime_types = ['murder', 'rape', 'kidnapping & abduction', 'robbery', 'burglary', 'dowry deaths']
-    crime_frequencies = filtered_data[crime_types].sum().sort_values(ascending=False)
+    crime_frequencies = recent_data[crime_types].sum().sort_values(ascending=False)
     st.bar_chart(crime_frequencies)
-
-    # Interactive Crime Heatmap
-    st.subheader('Crime Hotspot Map')
-    m = folium.Map(location=[filtered_data['latitude'].mean(), filtered_data['longitude'].mean()], zoom_start=10)
-    for idx, row in filtered_data.iterrows():
-        folium.Marker([row['latitude'], row['longitude']], popup=f"Crime: {row['murder']} Murders").add_to(m)
-    folium_static(m)
 
     # Back Button
     if st.button('Go Back'):
