@@ -108,8 +108,13 @@ if st.session_state.page == 'Crime Data':
     # Interactive Crime Heatmap
     st.subheader('Crime Hotspot Map')
     m = folium.Map(location=[filtered_data['latitude'].mean(), filtered_data['longitude'].mean()], zoom_start=10)
+
+    # Position map control on the left side by setting position to 'topleft' (default is 'topright')
+    folium.LayerControl(position='topleft').add_to(m)
+
     for idx, row in filtered_data.iterrows():
         folium.Marker([row['latitude'], row['longitude']], popup=f"Crime: {row['murder']} Murders").add_to(m)
+    
     folium_static(m)
 
     # Back Button
