@@ -43,7 +43,7 @@ if st.session_state.page == 'Crime Data':
     filtered_data = data[
         (data['state/ut'] == state) &
         (data['district'] == district) &
-        (data['year'].isin([2021, 2022, 2023, 2024]))
+        (data['year'].isin([2023, 2024]))
     ]
 
     st.subheader(f'Crime Data for {district}, {state}')
@@ -75,44 +75,20 @@ if st.session_state.page == 'Crime Data':
     else:
         st.error("🔴 High risk! Precaution is advised.")
 
-    # Crime Trend Visualization
+    # Crime Trend Visualization (Single Line Graph for 2021-2024)
     st.subheader('Crime Trends Over the Years')
-    crime_types = ['murder', 'rape', 'kidnapping & abduction', 'robbery', 'burglary', 'dowry deaths']
-    for crime in crime_types:
-        trend_data = filtered_data.groupby('year')[crime].sum()
-        st.line_chart(trend_data)
+    trend_data = data[
+        (data['state/ut'] == state) &
+        (data['district'] == district) &
+        (data['year'].isin([2021, 2022, 2023, 2024]))
+    ].groupby('year')['murder'].sum()
+    st.line_chart(trend_data)
 
     # Crime Frequency Analysis
     st.subheader('Crime Distribution')
+    crime_types = ['murder', 'rape', 'kidnapping & abduction', 'robbery', 'burglary', 'dowry deaths']
     crime_frequencies = filtered_data[crime_types].sum().sort_values(ascending=False)
     st.bar_chart(crime_frequencies)
-
-    # Top Crime-Prone Areas
-    st.subheader('Top Crime-Prone Areas')
-    hotspots = filtered_data.groupby('district')['murder', 'robbery', 'burglary'].sum().sort_values(by=['murder'], ascending=False).head(5)
-    st.table(hotspots)
-
-    # Crime Heatmap Visualization
-    st.subheader('Crime Correlation Heatmap')
-    plt.figure(figsize=(8,6))
-    sns.heatmap(filtered_data[crime_types].corr(), annot=True, cmap='coolwarm')
-    st.pyplot(plt)
-
-    # Safety Recommendations
-    st.subheader('Safety Recommendations')
-    if crime_frequencies['murder'] > 50:
-        st.warning("🔴 Avoid high-crime areas at night and stay vigilant.")
-    if crime_frequencies['rape'] > 30:
-        st.warning("⚠️ Travel in groups and use verified transport services.")
-    if crime_frequencies['burglary'] > 100:
-        st.warning("🏠 Install security systems and inform neighbors when away.")
-
-    # Crime Forecasting (Predicting Future Trends)
-    st.subheader('Predicted Crime Rates for Next 3 Years (Murder Cases)')
-    crime_forecast_model = ARIMA(filtered_data['murder'], order=(1, 1, 1))
-    model_fit = crime_forecast_model.fit()
-    future_prediction = model_fit.forecast(steps=3)
-    st.write(future_prediction)
 
     # Interactive Crime Heatmap
     st.subheader('Crime Hotspot Map')
