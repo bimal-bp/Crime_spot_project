@@ -20,22 +20,27 @@ crime_data['district'] = crime_data['district'].str.title()
 location_data['State'] = location_data['State'].str.title()
 location_data['District'] = location_data['District'].str.title()
 
-# Home Page UI
+# Home Page UI - Login Form
 st.title("🌍 Crime Data Analysis & Safety Insights")
-st.image("https://source.unsplash.com/800x300/?city,safety", use_column_width=True)
 
-st.write(
-    """
-    Welcome to the **Crime Data Analysis & Safety Insights App**!  
-    Gain insights into crime trends, hotspot mapping, and safety recommendations.
-    """
-)
+# Add Login Section (Name, Age, Gender)
+st.subheader("🔐 Please Log in to Continue")
 
-# Button to proceed to Crime Analysis
-if st.button("Start Crime Analysis 🔍"):
-    st.session_state.page = 'Analysis'
+name = st.text_input("Enter your name:")
+age = st.number_input("Enter your age:", min_value=1, max_value=120)
+gender = st.selectbox("Select your gender:", ["Male", "Female", "Other"])
 
-# Crime Analysis Page - State and District Selection
+if st.button("Proceed to Crime Data Analysis"):
+    if name and age and gender:
+        # Store the session information for the next page
+        st.session_state.name = name
+        st.session_state.age = age
+        st.session_state.gender = gender
+        st.session_state.page = 'Analysis'
+    else:
+        st.warning("Please fill in all the fields.")
+
+# Second page - Location selection for Crime Analysis
 if 'page' in st.session_state and st.session_state.page == 'Analysis':
     st.title("🔍 Select Location for Crime Analysis")
 
@@ -48,10 +53,10 @@ if 'page' in st.session_state and st.session_state.page == 'Analysis':
         st.session_state.state = state
         st.session_state.district = district
 
-        filtered_data = crime_data[
-            (crime_data['state/ut'] == state) &
-            (crime_data['district'] == district) &
-            (crime_data['year'] == 2024)
+        filtered_data = crime_data[ 
+            (crime_data['state/ut'] == state) & 
+            (crime_data['district'] == district) & 
+            (crime_data['year'] == 2024) 
         ]
 
         # Crime Severity Score Calculation
