@@ -6,18 +6,23 @@ import folium
 from streamlit_folium import folium_static
 from statsmodels.tsa.arima.model import ARIMA
 
-# Load the dataset and aggregated district coordinates
+# Load the datasets
 @st.cache_data
-def load_data():
-    crime_data = pd.read_pickle('crime_data.pkl')
-    location_data = pd.read_pickle('state_district_lat_long.pkl')
-    return crime_data, location_data
+def load_crime_data():
+    return pd.read_pickle('crime_data.pkl')
 
-crime_data, location_data = load_data()
+@st.cache_data
+def load_location_data():
+    return pd.read_pickle('state_district_lat_long.pkl')
+
+crime_data = load_crime_data()
+location_data = load_location_data()
 
 # Capitalize state and district names for consistency
 crime_data['state/ut'] = crime_data['state/ut'].str.title()
 crime_data['district'] = crime_data['district'].str.title()
+location_data['State'] = location_data['State'].str.title()
+location_data['District'] = location_data['District'].str.title()
 
 # Page selection state management
 if 'page' not in st.session_state:
@@ -28,6 +33,7 @@ if st.session_state.page == 'Home':
     st.title('Crime Data Analysis & Safety Insights')
 
     state = st.selectbox('Select State/UT:', crime_data['state/ut'].unique())
+
     districts = crime_data[crime_data['state/ut'] == state]['district'].unique()
     district = st.selectbox('Select District:', districts)
 
@@ -41,7 +47,6 @@ if st.session_state.page == 'Crime Data':
     state = st.session_state.state
     district = st.session_state.district
 
-    # Filter the crime data
     filtered_data = crime_data[
         (crime_data['state/ut'] == state) &
         (crime_data['district'] == district) &
@@ -63,7 +68,7 @@ if st.session_state.page == 'Crime Data':
     def calculate_crime_severity(df):
         weighted_sum = sum(df[col].sum() * weight for col, weight in crime_weights.items())
         max_possible = sum(df[col].max() * weight for col, weight in crime_weights.items())
-        crime_index = (weighted_sum / max_possible) * 100 if max_possible else 0
+        crime_index = (weighted_sum / max_possible) * 100 if max_possible > 0 else 0
         return round(crime_index, 2)
 
     crime_severity_index = calculate_crime_severity(filtered_data)
@@ -84,7 +89,11 @@ if st.session_state.page == 'Crime Data':
 
     # Crime Trend Visualization (2021-2024) - All trends in one graph
     st.subheader('Crime Trends Over the Years')
-    trend_data = crime_data[(crime_data['state/ut'] == state) & (crime_data['district'] == district) & (crime_data['year'].isin([2021, 2022, 2023, 2024]))]
+    trend_data = crime_data[
+        (crime_data['state/ut'] == state) & 
+        (crime_data['district'] == district) & 
+        (crime_data['year'].isin([2021, 2022, 2023, 2024]))
+    ]
     
     plt.figure(figsize=(10, 6))
     for crime in crime_types:
@@ -97,30 +106,6 @@ if st.session_state.page == 'Crime Data':
     plt.legend(title="Crime Types")
     st.pyplot(plt)
 
-    # Interactive Crime Hotspot Map
-    st.subheader('Crime Hotspot Map')
-
-    # Lookup latitude and longitude from location_data
-    location_row = location_data[
-        (location_data['State'].str.lower() == state.lower()) & 
-        (location_data['District'].str.lower() == district.lower())
-    ]
-
-    if not location_row.empty:
-        latitude, longitude = location_row.iloc[0]['Latitude'], location_row.iloc[0]['Longitude']
-        
-        m = folium.Map(location=[latitude, longitude], zoom_start=10)
-        
-        for idx, row in filtered_data.iterrows():
-            folium.Marker(
-                location=[row['latitude'], row['longitude']],
-                popup=f"{district} Crimes: {row['murder']} murders"
-            ).add_to(m)
-        
-        folium_static(m)
-    else:
-        st.warning("Coordinates for the selected district were not found.")
-
     # Safety Recommendations
     st.subheader('Safety Recommendations')
     if crime_frequencies['murder'] > 50:
@@ -129,6 +114,34 @@ if st.session_state.page == 'Crime Data':
         st.warning("⚠️ Travel in groups and use verified transport services.")
     if crime_frequencies['burglary'] > 100:
         st.warning("🏠 Install security systems and inform neighbors when away.")
+
+    # Interactive Crime Hotspot Map
+    st.subheader('Crime Hotspot Map')
+
+    # Lookup latitude and longitude from location_data
+    location_row = location_data[
+        (location_data['State'] == state) & 
+        (location_data['District'] == district)
+    ]
+
+    if not location_row.empty:
+        latitude, longitude = location_row.iloc[0]['Latitude'], location_row.iloc[0]['Longitude']
+        
+        m = folium.Map(location=[latitude, longitude], zoom_start=10)
+
+        # Check if latitude and longitude columns are available
+        if 'latitude' in filtered_data.columns and 'longitude' in filtered_data.columns:
+            for idx, row in filtered_data.iterrows():
+                folium.Marker(
+                    location=[row['latitude'], row['longitude']],
+                    popup=f"{district} Crimes: {row['murder']} murders"
+                ).add_to(m)
+        else:
+            st.warning("Latitude and Longitude information is missing for crime events.")
+        
+        folium_static(m)
+    else:
+        st.warning("Coordinates for the selected district were not found.")
 
     # Back Button
     if st.button('Go Back'):
