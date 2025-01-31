@@ -39,9 +39,9 @@ if st.button('Show Crime Data'):
 
     st.subheader(f'Crime Data for {district}, {state} (2024)')
 
-    # Updated Crime Severity Score Calculation with New Thresholds
+    # Updated Crime Severity Score Calculation with Adjusted Thresholds
     crime_weights = {
-        'murder': 7,
+        'murder': 10,  # Higher weight for murder
         'rape': 6,
         'kidnapping & abduction': 5,
         'robbery': 4,
@@ -58,10 +58,10 @@ if st.button('Show Crime Data'):
     crime_severity_index = calculate_crime_severity(filtered_data)
     st.metric(label="Crime Severity Index (Higher is riskier)", value=crime_severity_index)
 
-    # Updated Thresholds for Safety Messages
-    if crime_severity_index < 30:
+    # Updated Risk Thresholds
+    if crime_severity_index < 25:
         st.success("🟢 This area is relatively safe.")
-    elif crime_severity_index < 60:
+    elif 25 <= crime_severity_index <= 55:
         st.warning("🟠 Moderate risk; stay cautious.")
     else:
         st.error("🔴 High risk! Precaution is advised.")
@@ -77,18 +77,15 @@ if st.button('Show Crime Data'):
 
     if not location_row.empty:
         latitude, longitude = location_row.iloc[0]['Latitude'], location_row.iloc[0]['Longitude']
-        
+
         m = folium.Map(location=[latitude, longitude], zoom_start=10)
 
-        # Check if latitude and longitude columns are available
-        if 'latitude' in filtered_data.columns and 'longitude' in filtered_data.columns:
-            for idx, row in filtered_data.iterrows():
-                folium.Marker(
-                    location=[row['latitude'], row['longitude']],
-                    popup=f"{district} Crimes: {row['murder']} murders"
-                ).add_to(m)
-        else:
-            st.warning("Latitude and Longitude information is missing for crime events.")
+        # Add district marker without showing crime-specific events
+        folium.Marker(
+            location=[latitude, longitude],
+            popup=f"{district}, {state}",
+            icon=folium.Icon(color="blue", icon="info-sign")
+        ).add_to(m)
         
         folium_static(m)
     else:
