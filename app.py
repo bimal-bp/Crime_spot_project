@@ -22,15 +22,25 @@ crime_data['district'] = crime_data['district'].str.title()
 location_data['State'] = location_data['State'].str.title()
 location_data['District'] = location_data['District'].str.title()
 
-# Login Page Inputs
-st.title('Crime Data Analysis & Safety Insights - Login')
-st.text_input("Name:", key="user_name")
-st.selectbox("Gender:", ["Male", "Female", "Other"], key="user_gender")
-st.number_input("Age:", min_value=1, max_value=120, step=1, key="user_age")
+# Home Page UI
+st.title("🌍 Crime Data Analysis & Safety Insights")
+st.image("https://source.unsplash.com/800x300/?city,safety", use_column_width=True)
 
-if st.button('Proceed'):
+st.write(
+    """
+    Welcome to the **Crime Data Analysis & Safety Insights App**!  
+    Gain insights into crime trends, hotspot mapping, and safety recommendations.
+    """
+)
+
+if st.button("Start Crime Analysis 🔍"):
+    st.session_state.page = 'Analysis'
+
+if 'page' in st.session_state and st.session_state.page == 'Analysis':
+    st.title("🔍 Select Location for Crime Analysis")
+
+    # State and District Selection
     state = st.selectbox('Select State/UT:', crime_data['state/ut'].unique())
-
     districts = crime_data[crime_data['state/ut'] == state]['district'].unique()
     district = st.selectbox('Select District:', districts)
 
@@ -83,7 +93,6 @@ if st.button('Proceed'):
             latitude, longitude = location_row.iloc[0]['Latitude'], location_row.iloc[0]['Longitude']
 
             m = folium.Map(location=[latitude, longitude], zoom_start=10)
-            
             folium_static(m)
         else:
             st.warning("Coordinates for the selected district were not found.")
