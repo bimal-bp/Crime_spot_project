@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import folium
 from streamlit_folium import folium_static
+import matplotlib.pyplot as plt
 
 # Load the dataset
 @st.cache_data
@@ -20,11 +21,25 @@ crime_data['district'] = crime_data['district'].str.title()
 location_data['State'] = location_data['State'].str.title()
 location_data['District'] = location_data['District'].str.title()
 
+# Crime Severity Score Calculation
+crime_weights = {
+    'murder': 7,
+    'rape': 5,
+    'kidnapping & abduction': 5,
+    'robbery': 3,
+    'burglary': 3,
+    'dowry deaths': 4
+}
+
+def calculate_crime_severity(df):
+    weighted_sum = sum(df[col].sum() * weight for col, weight in crime_weights.items())
+    max_possible = sum(500 * weight for weight in crime_weights.values())
+    crime_index = (weighted_sum / max_possible) * 100 if max_possible > 0 else 0
+    return round(crime_index, 2)
+
 # Home Page UI - Login Form
 def login_page():
     st.title("🌍 Crime Data Analysis & Safety Insights")
-
-    # Add Login Section (Name, Age, Gender)
     st.subheader("🔐 Please Log in to Continue")
 
     name = st.text_input("Enter your name:")
@@ -33,7 +48,6 @@ def login_page():
 
     if st.button("Proceed to Next Step"):
         if name and age and gender:
-            # Store the session information for the next page
             st.session_state.name = name
             st.session_state.age = age
             st.session_state.gender = gender
@@ -44,8 +58,6 @@ def login_page():
 # Second Page - Location selection for Crime Analysis
 def location_input_page():
     st.title("🌍 Enter Your Location")
-
-    # State and District Selection
     state = st.selectbox('Select State/UT:', crime_data['state/ut'].unique())
     districts = crime_data[crime_data['state/ut'] == state]['district'].unique()
     district = st.selectbox('Select District:', districts)
@@ -62,42 +74,38 @@ def location_input_page():
 def crime_analysis_page():
     st.title("🔍 Crime Data Analysis for Selected Location")
 
-    # Get the selected state and district
     state = st.session_state.state
     district = st.session_state.district
 
-    filtered_data = crime_data[ 
+    filtered_data = crime_data[
         (crime_data['state/ut'] == state) & 
-        (crime_data['district'] == district) & 
-        (crime_data['year'] == 2024) 
+        (crime_data['district'] == district)
     ]
 
-    # Crime Severity Score Calculation
-    crime_weights = {
-        'murder': 7,
-        'rape': 5,
-        'kidnapping & abduction': 5,
-        'robbery': 3,
-        'burglary': 3,
-        'dowry deaths': 4
-    }
+    # Calculate Crime Severity Index for 2022, 2023, and 2024
+    trend_data = {}
+    for year in [2022, 2023, 2024]:
+        yearly_data = filtered_data[filtered_data['year'] == year]
+        trend_data[year] = calculate_crime_severity(yearly_data)
 
-    def calculate_crime_severity(df):
-        weighted_sum = sum(df[col].sum() * weight for col, weight in crime_weights.items())
-        max_possible = sum(500 * weight for weight in crime_weights.values())
-        crime_index = (weighted_sum / max_possible) * 100 if max_possible > 0 else 0
-        return round(crime_index, 2)
-
-    crime_severity_index = calculate_crime_severity(filtered_data)
+    # Display Crime Severity Index for 2024
+    crime_severity_index = trend_data[2024]
     st.metric(label="Crime Severity Index (Higher is riskier)", value=crime_severity_index)
 
-    # Updated Risk Thresholds with better interface
+    # Crime Severity Trend Line Chart
+    st.subheader("Crime Severity Trend (2022 - 2024)")
+    st.line_chart(pd.DataFrame(trend_data, index=["Crime Severity Index"]).T)
+
+    # Risk Assessment and Recommendations
     if crime_severity_index < 25:
         st.markdown("<div class='success-alert'>🟢 This area is relatively safe.</div>", unsafe_allow_html=True)
+        st.write("Recommendation: Maintain neighborhood watch programs and increase public awareness.")
     elif 25 <= crime_severity_index <= 55:
         st.markdown("<div class='warning-alert'>🟠 Moderate risk; stay cautious.</div>", unsafe_allow_html=True)
+        st.write("Recommendation: Consider additional security measures and community involvement.")
     else:
         st.markdown("<div class='danger-alert'>🔴 High risk! Precaution is advised.</div>", unsafe_allow_html=True)
+        st.write("Recommendation: Increase law enforcement presence and community safety initiatives.")
 
     # Crime Hotspot Map without markers
     st.subheader('Crime Hotspot Map')
