@@ -21,49 +21,48 @@ crime_data['district'] = crime_data['district'].str.title()
 location_data['State'] = location_data['State'].str.title()
 location_data['District'] = location_data['District'].str.title()
 
-# Login Page
+# App state management
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
+if 'state' not in st.session_state:
+    st.session_state.state = None
+if 'district' not in st.session_state:
+    st.session_state.district = None
 
+# Login Page
 if not st.session_state.logged_in:
-    st.title("🔐 Login Page")
+    st.markdown("### Welcome to Crime Safety Insights")
+    st.subheader("🔐 Login")
 
     name = st.text_input("Enter your Name")
     gender = st.radio("Select Gender", ['Male', 'Female', 'Other'])
     age = st.number_input("Enter your Age", min_value=1, max_value=120, value=25)
 
     if st.button("Login"):
-        if name and gender:
+        if name.strip() and gender:
             st.session_state.logged_in = True
             st.session_state.user_name = name
-            st.success(f"Welcome, {name}! You are logged in.")
+            st.success(f"Welcome, {name}!")
         else:
-            st.error("Please enter your name and select your gender.")
+            st.error("Please enter all required fields.")
 else:
-    # Home Page
-    st.title(f"Welcome, {st.session_state.user_name}!")
-    st.write("Navigate and analyze crime insights in your area.")
+    # Input Page for State and District
+    st.markdown(f"### Hi {st.session_state.user_name}, Let's Select Your Region 📍")
 
-    if st.button("Go to Crime Analysis 🔍"):
-        st.session_state.page = 'Analysis'
-
-# Analysis Page
-if 'page' in st.session_state and st.session_state.page == 'Analysis':
-    st.title("🔍 Select Location for Crime Analysis")
-
-    # State and District Selection
     state = st.selectbox('Select State/UT:', crime_data['state/ut'].unique())
     districts = crime_data[crime_data['state/ut'] == state]['district'].unique()
     district = st.selectbox('Select District:', districts)
 
     if st.button('Show Crime Data'):
+        st.session_state.state = state
+        st.session_state.district = district
+
+        # Filter for 2024 data
         filtered_data = crime_data[
             (crime_data['state/ut'] == state) &
             (crime_data['district'] == district) &
-            (crime_data['year'] == 2024)  # Only consider 2024 data
+            (crime_data['year'] == 2024)
         ]
-
-        st.subheader(f'Crime Data for {district}, {state} (2024)')
 
         # Crime Severity Score Calculation
         crime_weights = {
@@ -77,7 +76,7 @@ if 'page' in st.session_state and st.session_state.page == 'Analysis':
 
         def calculate_crime_severity(df):
             weighted_sum = sum(df[col].sum() * weight for col, weight in crime_weights.items())
-            max_possible = sum(500 * weight for weight in crime_weights.values())  # Hypothetical normalization factor
+            max_possible = sum(500 * weight for weight in crime_weights.values())
             crime_index = (weighted_sum / max_possible) * 100 if max_possible > 0 else 0
             return round(crime_index, 2)
 
