@@ -1,10 +1,8 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
-import seaborn as sns
 import folium
 from streamlit_folium import folium_static
-from statsmodels.tsa.arima.model import ARIMA
 
 # Load the datasets
 @st.cache_data
@@ -24,96 +22,49 @@ crime_data['district'] = crime_data['district'].str.title()
 location_data['State'] = location_data['State'].str.title()
 location_data['District'] = location_data['District'].str.title()
 
-# Page selection state management
-if 'page' not in st.session_state:
-    st.session_state.page = 'Home'
+# State and district selection
+st.title('Crime Data Analysis & Safety Insights')
 
-# Home page - State and District selection
-if st.session_state.page == 'Home':
-    st.title('Crime Data Analysis & Safety Insights')
+state = st.selectbox('Select State/UT:', crime_data['state/ut'].unique())
 
-    state = st.selectbox('Select State/UT:', crime_data['state/ut'].unique())
+districts = crime_data[crime_data['state/ut'] == state]['district'].unique()
+district = st.selectbox('Select District:', districts)
 
-    districts = crime_data[crime_data['state/ut'] == state]['district'].unique()
-    district = st.selectbox('Select District:', districts)
-
-    if st.button('Show Crime Data'):
-        st.session_state.state = state
-        st.session_state.district = district
-        st.session_state.page = 'Crime Data'
-
-# Crime Data Page - Display insights and analysis
-if st.session_state.page == 'Crime Data':
-    state = st.session_state.state
-    district = st.session_state.district
-
+if st.button('Show Crime Data'):
     filtered_data = crime_data[
         (crime_data['state/ut'] == state) &
         (crime_data['district'] == district) &
-        (crime_data['year'].isin([2023, 2024]))
+        (crime_data['year'] == 2024)  # Only consider 2024 data
     ]
 
-    st.subheader(f'Crime Data for {district}, {state}')
+    st.subheader(f'Crime Data for {district}, {state} (2024)')
 
-    # Crime Severity Score Calculation
+    # Updated Crime Severity Score Calculation with New Thresholds
     crime_weights = {
-        'murder': 5,
-        'rape': 4,
-        'kidnapping & abduction': 4,
-        'robbery': 3,
-        'burglary': 2,
-        'dowry deaths': 3
+        'murder': 7,
+        'rape': 6,
+        'kidnapping & abduction': 5,
+        'robbery': 4,
+        'burglary': 3,
+        'dowry deaths': 4
     }
 
     def calculate_crime_severity(df):
         weighted_sum = sum(df[col].sum() * weight for col, weight in crime_weights.items())
-        max_possible = sum(df[col].max() * weight for col, weight in crime_weights.items())
+        max_possible = sum(500 * weight for weight in crime_weights.values())  # Hypothetical normalization factor
         crime_index = (weighted_sum / max_possible) * 100 if max_possible > 0 else 0
         return round(crime_index, 2)
 
     crime_severity_index = calculate_crime_severity(filtered_data)
     st.metric(label="Crime Severity Index (Higher is riskier)", value=crime_severity_index)
 
-    if crime_severity_index < 40:
+    # Updated Thresholds for Safety Messages
+    if crime_severity_index < 30:
         st.success("🟢 This area is relatively safe.")
-    elif crime_severity_index < 70:
+    elif crime_severity_index < 60:
         st.warning("🟠 Moderate risk; stay cautious.")
     else:
         st.error("🔴 High risk! Precaution is advised.")
-
-    # Crime Frequency Analysis
-    st.subheader('Crime Distribution')
-    crime_types = ['murder', 'rape', 'kidnapping & abduction', 'robbery', 'burglary', 'dowry deaths']
-    crime_frequencies = filtered_data[crime_types].sum().sort_values(ascending=False)
-    st.bar_chart(crime_frequencies)
-
-    # Crime Trend Visualization (2021-2024) - All trends in one graph
-    st.subheader('Crime Trends Over the Years')
-    trend_data = crime_data[
-        (crime_data['state/ut'] == state) & 
-        (crime_data['district'] == district) & 
-        (crime_data['year'].isin([2021, 2022, 2023, 2024]))
-    ]
-    
-    plt.figure(figsize=(10, 6))
-    for crime in crime_types:
-        crime_sum_by_year = trend_data.groupby('year')[crime].sum()
-        plt.plot(crime_sum_by_year.index, crime_sum_by_year.values, label=crime)
-    
-    plt.title(f'Crime Trends for {district}, {state} (2021-2024)')
-    plt.xlabel('Year')
-    plt.ylabel('Crime Count')
-    plt.legend(title="Crime Types")
-    st.pyplot(plt)
-
-    # Safety Recommendations
-    st.subheader('Safety Recommendations')
-    if crime_frequencies['murder'] > 50:
-        st.warning("🔴 Avoid high-crime areas at night and stay vigilant.")
-    if crime_frequencies['rape'] > 30:
-        st.warning("⚠️ Travel in groups and use verified transport services.")
-    if crime_frequencies['burglary'] > 100:
-        st.warning("🏠 Install security systems and inform neighbors when away.")
 
     # Interactive Crime Hotspot Map
     st.subheader('Crime Hotspot Map')
@@ -142,7 +93,3 @@ if st.session_state.page == 'Crime Data':
         folium_static(m)
     else:
         st.warning("Coordinates for the selected district were not found.")
-
-    # Back Button
-    if st.button('Go Back'):
-        st.session_state.page = 'Home'
