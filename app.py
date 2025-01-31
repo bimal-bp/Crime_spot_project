@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
 import folium
 from streamlit_folium import folium_static
 
@@ -22,20 +21,33 @@ crime_data['district'] = crime_data['district'].str.title()
 location_data['State'] = location_data['State'].str.title()
 location_data['District'] = location_data['District'].str.title()
 
-# Home Page UI
-st.title("🌍 Crime Data Analysis & Safety Insights")
-st.image("https://source.unsplash.com/800x300/?city,safety", use_column_width=True)
+# Login Page
+if 'logged_in' not in st.session_state:
+    st.session_state.logged_in = False
 
-st.write(
-    """
-    Welcome to the **Crime Data Analysis & Safety Insights App**!  
-    Gain insights into crime trends, hotspot mapping, and safety recommendations.
-    """
-)
+if not st.session_state.logged_in:
+    st.title("🔐 Login Page")
 
-if st.button("Start Crime Analysis 🔍"):
-    st.session_state.page = 'Analysis'
+    name = st.text_input("Enter your Name")
+    gender = st.radio("Select Gender", ['Male', 'Female', 'Other'])
+    age = st.number_input("Enter your Age", min_value=1, max_value=120, value=25)
 
+    if st.button("Login"):
+        if name and gender:
+            st.session_state.logged_in = True
+            st.session_state.user_name = name
+            st.success(f"Welcome, {name}! You are logged in.")
+        else:
+            st.error("Please enter your name and select your gender.")
+else:
+    # Home Page
+    st.title(f"Welcome, {st.session_state.user_name}!")
+    st.write("Navigate and analyze crime insights in your area.")
+
+    if st.button("Go to Crime Analysis 🔍"):
+        st.session_state.page = 'Analysis'
+
+# Analysis Page
 if 'page' in st.session_state and st.session_state.page == 'Analysis':
     st.title("🔍 Select Location for Crime Analysis")
 
@@ -55,7 +67,7 @@ if 'page' in st.session_state and st.session_state.page == 'Analysis':
 
         # Crime Severity Score Calculation
         crime_weights = {
-            'murder': 10,  # Higher weight for murder
+            'murder': 10,
             'rape': 6,
             'kidnapping & abduction': 5,
             'robbery': 4,
