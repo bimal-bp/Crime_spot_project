@@ -3,6 +3,54 @@ import pandas as pd
 import folium
 from streamlit_folium import folium_static
 
+# Custom CSS for better styling
+st.markdown("""
+    <style>
+    body {
+        font-family: 'Arial', sans-serif;
+    }
+    .main-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        border: 2px solid #ddd;
+        background-color: #f9f9f9;
+        border-radius: 10px;
+        box-shadow: 2px 4px 6px rgba(0,0,0,0.1);
+    }
+    .title {
+        color: #4a90e2;
+        font-size: 2.5em;
+        font-weight: bold;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    .footer {
+        text-align: center;
+        color: gray;
+        margin-top: 20px;
+    }
+    .success-alert {
+        background-color: #d4edda;
+        color: #155724;
+        padding: 10px;
+        border-radius: 5px;
+    }
+    .warning-alert {
+        background-color: #fff3cd;
+        color: #856404;
+        padding: 10px;
+        border-radius: 5px;
+    }
+    .danger-alert {
+        background-color: #f8d7da;
+        color: #721c24;
+        padding: 10px;
+        border-radius: 5px;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 # Load the datasets
 @st.cache_data
 def load_crime_data():
@@ -15,7 +63,6 @@ def load_location_data():
 crime_data = load_crime_data()
 location_data = load_location_data()
 
-# Capitalize state and district names for consistency
 crime_data['state/ut'] = crime_data['state/ut'].str.title()
 crime_data['district'] = crime_data['district'].str.title()
 location_data['State'] = location_data['State'].str.title()
@@ -31,23 +78,24 @@ if 'district' not in st.session_state:
 
 # Login Page
 if not st.session_state.logged_in:
-    st.markdown("### Welcome to Crime Safety Insights")
-    st.subheader("🔐 Login")
-
-    name = st.text_input("Enter your Name")
-    gender = st.radio("Select Gender", ['Male', 'Female', 'Other'])
-    age = st.number_input("Enter your Age", min_value=1, max_value=120, value=25)
-
-    if st.button("Login"):
-        if name.strip() and gender:
-            st.session_state.logged_in = True
-            st.session_state.user_name = name
-            st.success(f"Welcome, {name}!")
-        else:
-            st.error("Please enter all required fields.")
+    with st.container():
+        st.markdown("<div class='main-container'>", unsafe_allow_html=True)
+        st.markdown("<div class='title'>Crime Safety Insights 🚨</div>", unsafe_allow_html=True)
+        
+        name = st.text_input("👤 Enter your Name")
+        gender = st.radio("🧍 Select Gender", ['Male', 'Female', 'Other'])
+        age = st.number_input("📅 Enter your Age", min_value=1, max_value=120, value=25)
+        
+        if st.button("🔐 Login"):
+            if name.strip() and gender:
+                st.session_state.logged_in = True
+                st.session_state.user_name = name
+                st.success(f"Welcome, {name}!")
+            else:
+                st.error("Please enter all required fields.")
 else:
     # Input Page for State and District
-    st.markdown(f"### Hi {st.session_state.user_name}, Let's Select Your Region 📍")
+    st.markdown(f"### Hello {st.session_state.user_name}, Let's Select Your Region 📍")
 
     state = st.selectbox('Select State/UT:', crime_data['state/ut'].unique())
     districts = crime_data[crime_data['state/ut'] == state]['district'].unique()
@@ -57,7 +105,6 @@ else:
         st.session_state.state = state
         st.session_state.district = district
 
-        # Filter for 2024 data
         filtered_data = crime_data[
             (crime_data['state/ut'] == state) &
             (crime_data['district'] == district) &
@@ -83,18 +130,17 @@ else:
         crime_severity_index = calculate_crime_severity(filtered_data)
         st.metric(label="Crime Severity Index (Higher is riskier)", value=crime_severity_index)
 
-        # Updated Risk Thresholds
+        # Updated Risk Thresholds with better interface
         if crime_severity_index < 25:
-            st.success("🟢 This area is relatively safe.")
+            st.markdown("<div class='success-alert'>🟢 This area is relatively safe.</div>", unsafe_allow_html=True)
         elif 25 <= crime_severity_index <= 55:
-            st.warning("🟠 Moderate risk; stay cautious.")
+            st.markdown("<div class='warning-alert'>🟠 Moderate risk; stay cautious.</div>", unsafe_allow_html=True)
         else:
-            st.error("🔴 High risk! Precaution is advised.")
+            st.markdown("<div class='danger-alert'>🔴 High risk! Precaution is advised.</div>", unsafe_allow_html=True)
 
-        # Crime Hotspot Map (without markers)
+        # Crime Hotspot Map without markers
         st.subheader('Crime Hotspot Map')
 
-        # Lookup latitude and longitude from location_data
         location_row = location_data[
             (location_data['State'] == state) & 
             (location_data['District'] == district)
@@ -102,7 +148,6 @@ else:
 
         if not location_row.empty:
             latitude, longitude = location_row.iloc[0]['Latitude'], location_row.iloc[0]['Longitude']
-
             m = folium.Map(location=[latitude, longitude], zoom_start=10)
             folium_static(m)
         else:
