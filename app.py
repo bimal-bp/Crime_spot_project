@@ -3,55 +3,7 @@ import pandas as pd
 import folium
 from streamlit_folium import folium_static
 
-# Custom CSS for better styling
-st.markdown("""
-    <style>
-    body {
-        font-family: 'Arial', sans-serif;
-    }
-    .main-container {
-        max-width: 800px;
-        margin: 0 auto;
-        padding: 20px;
-        border: 2px solid #ddd;
-        background-color: #f9f9f9;
-        border-radius: 10px;
-        box-shadow: 2px 4px 6px rgba(0,0,0,0.1);
-    }
-    .title {
-        color: #4a90e2;
-        font-size: 2.5em;
-        font-weight: bold;
-        text-align: center;
-        margin-bottom: 20px;
-    }
-    .footer {
-        text-align: center;
-        color: gray;
-        margin-top: 20px;
-    }
-    .success-alert {
-        background-color: #d4edda;
-        color: #155724;
-        padding: 10px;
-        border-radius: 5px;
-    }
-    .warning-alert {
-        background-color: #fff3cd;
-        color: #856404;
-        padding: 10px;
-        border-radius: 5px;
-    }
-    .danger-alert {
-        background-color: #f8d7da;
-        color: #721c24;
-        padding: 10px;
-        border-radius: 5px;
-    }
-    </style>
-""", unsafe_allow_html=True)
-
-# Load the datasets
+# Load the dataset
 @st.cache_data
 def load_crime_data():
     return pd.read_pickle('crime_data.pkl')
@@ -68,35 +20,26 @@ crime_data['district'] = crime_data['district'].str.title()
 location_data['State'] = location_data['State'].str.title()
 location_data['District'] = location_data['District'].str.title()
 
-# App state management
-if 'logged_in' not in st.session_state:
-    st.session_state.logged_in = False
-if 'state' not in st.session_state:
-    st.session_state.state = None
-if 'district' not in st.session_state:
-    st.session_state.district = None
+# Home Page UI
+st.title("🌍 Crime Data Analysis & Safety Insights")
+st.image("https://source.unsplash.com/800x300/?city,safety", use_column_width=True)
 
-# Login Page
-if not st.session_state.logged_in:
-    with st.container():
-        st.markdown("<div class='main-container'>", unsafe_allow_html=True)
-        st.markdown("<div class='title'>Crime Safety Insights 🚨</div>", unsafe_allow_html=True)
-        
-        name = st.text_input("👤 Enter your Name")
-        gender = st.radio("🧍 Select Gender", ['Male', 'Female', 'Other'])
-        age = st.number_input("📅 Enter your Age", min_value=1, max_value=120, value=25)
-        
-        if st.button("🔐 Login"):
-            if name.strip() and gender:
-                st.session_state.logged_in = True
-                st.session_state.user_name = name
-                st.success(f"Welcome, {name}!")
-            else:
-                st.error("Please enter all required fields.")
-else:
-    # Input Page for State and District
-    st.markdown(f"### Hello {st.session_state.user_name}, Let's Select Your Region 📍")
+st.write(
+    """
+    Welcome to the **Crime Data Analysis & Safety Insights App**!  
+    Gain insights into crime trends, hotspot mapping, and safety recommendations.
+    """
+)
 
+# Button to proceed to Crime Analysis
+if st.button("Start Crime Analysis 🔍"):
+    st.session_state.page = 'Analysis'
+
+# Crime Analysis Page - State and District Selection
+if 'page' in st.session_state and st.session_state.page == 'Analysis':
+    st.title("🔍 Select Location for Crime Analysis")
+
+    # State and District Selection
     state = st.selectbox('Select State/UT:', crime_data['state/ut'].unique())
     districts = crime_data[crime_data['state/ut'] == state]['district'].unique()
     district = st.selectbox('Select District:', districts)
@@ -113,10 +56,10 @@ else:
 
         # Crime Severity Score Calculation
         crime_weights = {
-            'murder': 10,
-            'rape': 6,
+            'murder': 7,
+            'rape': 5,
             'kidnapping & abduction': 5,
-            'robbery': 4,
+            'robbery': 3,
             'burglary': 3,
             'dowry deaths': 4
         }
