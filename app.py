@@ -23,12 +23,12 @@ location_data['District'] = location_data['District'].str.title()
 
 # Crime Severity Score Calculation
 crime_weights = {
-    'murder': 7,
-    'rape': 5,
-    'kidnapping & abduction': 5,
+    'murder': 5,
+    'rape': 4,
+    'kidnapping & abduction': 4,
     'robbery': 3,
     'burglary': 3,
-    'dowry deaths': 4
+    'dowry deaths': 3
 }
 
 def calculate_crime_severity(df):
@@ -43,7 +43,7 @@ def login_page():
     st.subheader("🔐 Please Log in to Continue")
 
     name = st.text_input("Enter your name:")
-    age = st.number_input("Enter your age:", min_value=1, max_value=120)
+    age = st.number_input("Enter your age:")
     gender = st.selectbox("Select your gender:", ["Male", "Female", "Other"])
 
     if st.button("Proceed to Next Step"):
@@ -99,13 +99,22 @@ def crime_analysis_page():
     # Risk Assessment and Recommendations
     if crime_severity_index < 25:
         st.markdown("<div class='success-alert'>🟢 This area is relatively safe.</div>", unsafe_allow_html=True)
-        st.write("Recommendation: Maintain neighborhood watch programs and increase public awareness.")
+        st.write("### Recommendations for Safe Zones:")
+        st.write("1. Maintain neighborhood watch programs to keep the community engaged.")
+        st.write("2. Increase public awareness through safety workshops.")
+        st.write("3. Foster community partnerships with local law enforcement.")
     elif 25 <= crime_severity_index <= 55:
         st.markdown("<div class='warning-alert'>🟠 Moderate risk; stay cautious.</div>", unsafe_allow_html=True)
-        st.write("Recommendation: Consider additional security measures and community involvement.")
+        st.write("### Recommendations for Moderate Risk Zones:")
+        st.write("1. Install additional street lighting in dark spots.")
+        st.write("2. Organize community patrols in higher crime areas.")
+        st.write("3. Encourage establishing local security services.")
     else:
         st.markdown("<div class='danger-alert'>🔴 High risk! Precaution is advised.</div>", unsafe_allow_html=True)
-        st.write("Recommendation: Increase law enforcement presence and community safety initiatives.")
+        st.write("### Recommendations for High-Risk Zones:")
+        st.write("1. Increase law enforcement presence in hotspot areas.")
+        st.write("2. Establish neighborhood vigilance programs.")
+        st.write("3. Launch emergency response systems with real-time alerts.")
 
     # Crime Hotspot Map without markers
     st.subheader('Crime Hotspot Map')
