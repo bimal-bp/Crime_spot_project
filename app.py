@@ -43,7 +43,7 @@ def login_page():
     st.subheader("🔐 Please Log in to Continue")
 
     name = st.text_input("Enter your name:")
-    age = st.number_input("Enter your age:", min_value=1, max_value=120)
+    age = st.number_input("Enter your age:")
     gender = st.selectbox("Select your gender:", ["Male", "Female", "Other"])
 
     if st.button("Proceed to Next Step"):
@@ -92,10 +92,6 @@ def crime_analysis_page():
     crime_severity_index = trend_data[2024]
     st.metric(label="Crime Severity Index (Higher is riskier)", value=crime_severity_index)
 
-    # Crime Severity Trend Line Chart
-    st.subheader("Crime Severity Trend (2022 - 2024)")
-    st.line_chart(pd.DataFrame(trend_data, index=["Crime Severity Index"]).T)
-
     # Risk Assessment and Recommendations
     if crime_severity_index < 25:
         st.markdown("<div class='success-alert'>🟢 This area is relatively safe.</div>", unsafe_allow_html=True)
@@ -138,10 +134,10 @@ def crime_analysis_page():
         else:
             color = 'red'  # High risk
         
-        # Add CircleMarker to the map
+        # Add a big CircleMarker to the map
         folium.CircleMarker(
             location=[latitude, longitude],
-            radius=10,
+            radius=20,  # Bigger circle
             color=color,
             fill=True,
             fill_color=color,
@@ -152,6 +148,10 @@ def crime_analysis_page():
         folium_static(m)
     else:
         st.warning("Coordinates for the selected district were not found.")
+
+    # Crime Severity Trend Line Chart after the map
+    st.subheader("Crime Severity Trend (2022 - 2024)")
+    st.line_chart(pd.DataFrame(trend_data, index=["Crime Severity Index"]).T)
 
 # Main code for app flow
 if 'page' not in st.session_state:
