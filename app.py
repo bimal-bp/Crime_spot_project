@@ -23,12 +23,12 @@ location_data['District'] = location_data['District'].str.title()
 
 # Crime Severity Score Calculation
 crime_weights = {
-    'murder': 7,
-    'rape': 5,
-    'kidnapping & abduction': 5,
+    'murder': 5,
+    'rape': 4,
+    'kidnapping & abduction': 4,
     'robbery': 3,
     'burglary': 3,
-    'dowry deaths': 4
+    'dowry deaths': 3
 }
 
 def calculate_crime_severity(df):
@@ -137,7 +137,7 @@ def crime_analysis_page():
         # Add a big CircleMarker to the map
         folium.CircleMarker(
             location=[latitude, longitude],
-            radius=20,  # Bigger circle
+            radius=50,  # Bigger circle
             color=color,
             fill=True,
             fill_color=color,
