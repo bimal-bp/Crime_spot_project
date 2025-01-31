@@ -21,27 +21,28 @@ location_data['State'] = location_data['State'].str.title()
 location_data['District'] = location_data['District'].str.title()
 
 # Home Page UI - Login Form
-st.title("🌍 Crime Data Analysis & Safety Insights")
+def login_page():
+    st.title("🌍 Crime Data Analysis & Safety Insights")
 
-# Add Login Section (Name, Age, Gender)
-st.subheader("🔐 Please Log in to Continue")
+    # Add Login Section (Name, Age, Gender)
+    st.subheader("🔐 Please Log in to Continue")
 
-name = st.text_input("Enter your name:")
-age = st.number_input("Enter your age:", min_value=1, max_value=120)
-gender = st.selectbox("Select your gender:", ["Male", "Female", "Other"])
+    name = st.text_input("Enter your name:")
+    age = st.number_input("Enter your age:", min_value=1, max_value=120)
+    gender = st.selectbox("Select your gender:", ["Male", "Female", "Other"])
 
-if st.button("Proceed to Next Step"):
-    if name and age and gender:
-        # Store the session information for the next page
-        st.session_state.name = name
-        st.session_state.age = age
-        st.session_state.gender = gender
-        st.session_state.page = 'SecondPage'
-    else:
-        st.warning("Please fill in all the fields.")
+    if st.button("Proceed to Next Step"):
+        if name and age and gender:
+            # Store the session information for the next page
+            st.session_state.name = name
+            st.session_state.age = age
+            st.session_state.gender = gender
+            st.session_state.page = 'LocationInputPage'
+        else:
+            st.warning("Please fill in all the fields.")
 
-# Second page - Location selection for Crime Analysis
-if 'page' in st.session_state and st.session_state.page == 'SecondPage':
+# Second Page - Location selection for Crime Analysis
+def location_input_page():
     st.title("🌍 Enter Your Location")
 
     # State and District Selection
@@ -53,12 +54,12 @@ if 'page' in st.session_state and st.session_state.page == 'SecondPage':
         if state and district:
             st.session_state.state = state
             st.session_state.district = district
-            st.session_state.page = 'Analysis'
+            st.session_state.page = 'CrimeAnalysisPage'
         else:
             st.warning("Please select both state and district.")
 
 # Crime Analysis Page - Crime Data Display
-if 'page' in st.session_state and st.session_state.page == 'Analysis':
+def crime_analysis_page():
     st.title("🔍 Crime Data Analysis for Selected Location")
 
     # Get the selected state and district
@@ -112,3 +113,15 @@ if 'page' in st.session_state and st.session_state.page == 'Analysis':
         folium_static(m)
     else:
         st.warning("Coordinates for the selected district were not found.")
+
+# Main code for app flow
+if 'page' not in st.session_state:
+    st.session_state.page = 'LoginPage'
+
+# Page routing based on session state
+if st.session_state.page == 'LoginPage':
+    login_page()
+elif st.session_state.page == 'LocationInputPage':
+    location_input_page()
+elif st.session_state.page == 'CrimeAnalysisPage':
+    crime_analysis_page()
