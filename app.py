@@ -40,13 +40,14 @@ if st.session_state.page == 'Crime Data':
     state = st.session_state.state
     district = st.session_state.district
 
+    # Filter data for 2024 only
     filtered_data = data[
         (data['state/ut'] == state) &
         (data['district'] == district) &
-        (data['year'].isin([2023, 2024]))
+        (data['year'] == 2024)  # Filter for only 2024
     ]
 
-    st.subheader(f'Crime Data for {district}, {state}')
+    st.subheader(f'Crime Data for {district}, {state} - 2024')
 
     # Crime Severity Score Calculation
     crime_weights = {
@@ -80,20 +81,19 @@ if st.session_state.page == 'Crime Data':
     crime_frequencies = filtered_data[crime_types].sum().sort_values(ascending=False)
     st.bar_chart(crime_frequencies)
 
-    # Crime Trend Visualization (2021-2024) - All trends in one graph
-    st.subheader('Crime Trends Over the Years')
-    trend_data = data[(data['state/ut'] == state) & (data['district'] == district) & (data['year'].isin([2021, 2022, 2023, 2024]))]
+    # Crime Trend Visualization for 2024
+    st.subheader('Crime Trends for 2024')
+    trend_data = filtered_data  # Already filtered for 2024
     
-    # Create a combined plot for all crime types across years
+    # Create a plot for crime types in 2024
     plt.figure(figsize=(10, 6))
     for crime in crime_types:
-        crime_sum_by_year = trend_data.groupby('year')[crime].sum()
-        plt.plot(crime_sum_by_year.index, crime_sum_by_year.values, label=crime)
+        crime_sum = trend_data[crime].sum()
+        plt.bar(crime, crime_sum)
     
-    plt.title(f'Crime Trends for {district}, {state} (2021-2024)')
-    plt.xlabel('Year')
+    plt.title(f'Crime Types for {district}, {state} - 2024')
+    plt.xlabel('Crime Types')
     plt.ylabel('Crime Count')
-    plt.legend(title="Crime Types")
     st.pyplot(plt)
 
     # Safety Recommendations
@@ -109,12 +109,11 @@ if st.session_state.page == 'Crime Data':
     st.subheader('Crime Hotspot Map')
     m = folium.Map(location=[filtered_data['latitude'].mean(), filtered_data['longitude'].mean()], zoom_start=10)
 
-    # Position map control on the left side by setting position to 'topleft' (default is 'topright')
     folium.LayerControl(position='topleft').add_to(m)
 
     for idx, row in filtered_data.iterrows():
         folium.Marker([row['latitude'], row['longitude']], popup=f"Crime: {row['murder']} Murders").add_to(m)
-    
+
     folium_static(m)
 
     # Back Button
