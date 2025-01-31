@@ -23,12 +23,12 @@ location_data['District'] = location_data['District'].str.title()
 
 # Crime Severity Score Calculation
 crime_weights = {
-    'murder': 5,
-    'rape': 4,
-    'kidnapping & abduction': 4,
+    'murder': 7,
+    'rape': 5,
+    'kidnapping & abduction': 5,
     'robbery': 3,
     'burglary': 3,
-    'dowry deaths': 3
+    'dowry deaths': 4
 }
 
 def calculate_crime_severity(df):
@@ -43,7 +43,7 @@ def login_page():
     st.subheader("🔐 Please Log in to Continue")
 
     name = st.text_input("Enter your name:")
-    age = st.number_input("Enter your age:")
+    age = st.number_input("Enter your age:", min_value=1, max_value=120)
     gender = st.selectbox("Select your gender:", ["Male", "Female", "Other"])
 
     if st.button("Proceed to Next Step"):
@@ -116,7 +116,7 @@ def crime_analysis_page():
         st.write("2. Establish neighborhood vigilance programs.")
         st.write("3. Launch emergency response systems with real-time alerts.")
 
-    # Crime Hotspot Map without markers
+    # Crime Hotspot Map with colored circles
     st.subheader('Crime Hotspot Map')
 
     location_row = location_data[
@@ -126,7 +126,29 @@ def crime_analysis_page():
 
     if not location_row.empty:
         latitude, longitude = location_row.iloc[0]['Latitude'], location_row.iloc[0]['Longitude']
+        
+        # Initialize map
         m = folium.Map(location=[latitude, longitude], zoom_start=10)
+
+        # Set circle color based on crime severity
+        if crime_severity_index < 25:
+            color = 'green'  # Safe zone
+        elif 25 <= crime_severity_index <= 55:
+            color = 'orange'  # Moderate risk
+        else:
+            color = 'red'  # High risk
+        
+        # Add CircleMarker to the map
+        folium.CircleMarker(
+            location=[latitude, longitude],
+            radius=10,
+            color=color,
+            fill=True,
+            fill_color=color,
+            fill_opacity=0.7,
+            popup=f"Crime Severity Index: {crime_severity_index}"
+        ).add_to(m)
+        
         folium_static(m)
     else:
         st.warning("Coordinates for the selected district were not found.")
