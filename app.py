@@ -38,7 +38,7 @@ def calculate_crime_severity(df):
     return round(crime_index, 2)
 
 # Home Page UI - Login Form
-adef login_page():
+def login_page():
     st.title("🌍 Crime Data Analysis & Safety Insights")
     st.subheader("🔐 Please Log in to Continue")
 
@@ -56,7 +56,7 @@ adef login_page():
             st.warning("Please fill in all the fields.")
 
 # Second Page - Location selection for Crime Analysis
-adef location_input_page():
+def location_input_page():
     st.title("🌍 Enter Your Location")
     state = st.selectbox('Select State/UT:', crime_data['state/ut'].unique())
     districts = crime_data[crime_data['state/ut'] == state]['district'].unique()
