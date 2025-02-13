@@ -73,7 +73,7 @@ if map_data and "last_clicked" in map_data:
         
         # Add hotspots to the map
         for district, lat, lon, severity in nearby_hotspots:
-            color = "green" if severity < 25 else "orange" if severity < 75 else "red"
+            color = "green" if severity < 5 else "orange" if severity < 15 else "red"
             folium.CircleMarker(
                 location=[lat, lon],
                 radius=10,
